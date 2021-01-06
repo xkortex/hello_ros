@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(hello_cpp)
+project(hello_fsm)
 add_compile_options(-std=c++11 -Werror=return-type -Wall)
 find_package(catkin REQUIRED COMPONENTS roscpp)
 find_package(nlohmann_json REQUIRED)
@@ -19,20 +19,11 @@ include_directories(include
 )
 
 ## Declare a cpp executable
-add_executable(hello_cpp src/hello_cpp.cpp)
-add_executable(hello_consul src/hello_consul.cpp)
-add_executable(hello_json src/hello_json.cpp)
+add_executable(hello_fsm src/hello_fsm.cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(hello_cpp
+target_link_libraries(hello_fsm
   ${catkin_LIBRARIES}
-)
-target_link_libraries(hello_consul
-  ${catkin_LIBRARIES}
-)
-
-target_link_libraries(hello_json
-  ${nlohmann_json_LIBRARIES}
 )
 
 #############
@@ -43,7 +34,7 @@ target_link_libraries(hello_json
 # See http://ros.org/doc/groovy/api/catkin/html/adv_user_guide/variables.html
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS hello_cpp hello_cpp_node
+# install(TARGETS hello_fsm hello_fsm_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
