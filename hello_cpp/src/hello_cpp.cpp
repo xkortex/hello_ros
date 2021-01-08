@@ -38,10 +38,15 @@ static char *typeNames[] = {"Unknown", "String", "Float32", "Uint32", "Int64"};
 class ImageHandler {
 public:
     void callback(const sensor_msgs::ImageConstPtr& msg);
+    void tellme(string const &s, const sensor_msgs::ImageConstPtr& msg);
 };
 
 void ImageHandler::callback(const sensor_msgs::ImageConstPtr &msg) {
-    cout << "---\n" << *msg << "---" << endl;
+    tellme("callback", msg);
+}
+
+void ImageHandler::tellme(string const &s, const sensor_msgs::ImageConstPtr &msg) {
+    cout << "---" << s << "---\n" << msg->header.frame_id << " : " << msg << endl;
 }
 
 class CamAttr {
@@ -260,6 +265,7 @@ int main(int argc, char **argv) {
     //   what():  Cannot use ros::Time::now() before the first NodeHandle has been created or ros::start() has been called.  If this is a standalone app or test that just uses ros::Time and does not communicate over ROS, you may also call ros::Time::init()
 //  ros::Time::init();
     ros::NodeHandle nh;
+    ros::NodeHandlePtr nhp = ros::NodeHandlePtr(new ros::NodeHandle);
     ros::start();
     cout << ros::this_node::getName() << endl;
     ROS_INFO("Welcome to ROS!");
@@ -405,25 +411,63 @@ int main(int argc, char **argv) {
     shared_ptr<string> sp;
     ImageHandler handler;
     sensor_msgs::Image image;
+    image.header.frame_id = "MY_IMAGE";
     image.data = vector<uint8_t >{0, 1,2,3};
 //    image.header = std_msgs::Header;
 
     ros::Publisher pub = nh.advertise<sensor_msgs::Image>("/topic", 5);
-//    ros::Subscriber sub = nh.subscribe()<std_msgs::Header>("/topic", 5);
+    ros::Subscriber sub = nh.subscribe("/topic", 5, &ImageHandler::callback, &handler);
 
     ScheduledEvent sched;
-    tock = nh.createSteadyTimer(ros::WallDuration(0.05),
-                                [&tick](const ros::SteadyTimerEvent &event) {
-                                    ROS_WARN("tock");
-                                    now();
+//    delete sched.timer;
+    cout << &image << " " << &image.data << " " << typeid(image.data).name() << endl;
+    sensor_msgs::ImageConstPtr imagePtr{ &image};
+    handler.tellme("before", imagePtr);
+//    handler.callback(imagePtr);
+    auto end_ = nh.createSteadyTimer(ros::WallDuration(1.2),
+                                [](const ros::SteadyTimerEvent &event) {
+                                    ROS_ERROR("winner!");
+                                }, true, true);
+    tock = nh.createSteadyTimer(ros::WallDuration(0.5),
+                                [&tick, &handler, &imagePtr](const ros::SteadyTimerEvent &event) {
+                                    ROS_WARN("inside");
+//                                    sensor_msgs::ImageConstPtr imagePtr{ &image}; // this causes SIGABRT
+                                    handler.tellme("inside", imagePtr);
 
                                 }, true, true);
-//    delete sched.timer;
-    cout << &image.data << typeid(image.data).name() << endl;
-    sensor_msgs::ImageConstPtr imagePtr{ &image};
-    handler.callback(imagePtr);
+//    auto tock2 = nh.createSteadyTimer(ros::WallDuration(0.5),
+//                                [&tick, &handler, &image](const ros::SteadyTimerEvent &event) {
+//                                    ROS_WARN("woohooo");
+//                                    sensor_msgs::ImageConstPtr imagePtr2{ &image};
+//                                    image.header.frame_id = "woohooo";
+//                                    handler.tellme("inside2", imagePtr2);
+//                                }, true, true);
+    pub.publish(imagePtr);
+//    image.header.frame_id = "oops";
+    handler.tellme("after", imagePtr);
+    ros::Timer tim = nh.createTimer(ros::Duration(0.2), [](const ros::TimerEvent &event){
+        ROS_INFO("tim0 %s %s", to_string(event.current_expected).c_str(), to_string(event.last_expected).c_str() );
 
-    tock.~SteadyTimer();
+    }, true, true);
+
+    ros::Timer tim1 = nh.createTimer(ros::Duration(0.1), [&](const ros::TimerEvent &event){
+//        cout << "is tim valid1: " << tim.hasStarted() << endl;
+        tim.setPeriod(ros::Duration(0.5), true);
+        ROS_INFO("tim1 %s %s", to_string(event.current_expected).c_str(), to_string(event.last_expected).c_str() );
+    }, true, true);
+
+    ros::Timer tim2 = nh.createTimer(ros::Duration(0.3), [&](const ros::TimerEvent &event){
+//        cout << "is tim valid2: " << tim.hasStarted() << endl;
+        ROS_INFO("tim2 %s %s", to_string(event.current_expected).c_str(), to_string(event.last_expected).c_str() );
+
+    }, true, true);
+//    tock.~SteadyTimer();
+//    ros::NodeHandlePtr nhp = ros::this_node::get
+    image.data.size();
+    cout << "is tim valid: " << tim.hasStarted() << endl;
+    int i = 0;
+    auto res = nhp->getParam("/myint", i);
+    cout << res << " : " << i << endl;
     ros::spin();
 
     ros::spin(spinner);
@@ -431,5 +475,6 @@ int main(int argc, char **argv) {
 //    for (int i = 0; i < 999999; i++) {
 //        ros::spinOnce();
 //    }
+    if (tock) {}
     return 0;
 }
