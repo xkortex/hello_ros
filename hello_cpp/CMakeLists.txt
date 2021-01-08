@@ -23,10 +23,10 @@ include_directories(include
 
 ## Declare a cpp executable
 add_executable(hello_cpp src/hello_cpp.cpp)
-add_library(hello_nodelet src/hello_nodelet.cpp src/MyNodeletClass.cpp)
 add_executable(hello_consul src/hello_consul.cpp)
 add_executable(hello_json src/hello_json.cpp)
 add_executable(hello_redis src/hello_redis.cpp)
+#add_library(hello_nodelet src/hello_nodelet.cpp src/MyNodeletClass.cpp)
 
 # <------------ add hiredis dependency --------------->
 find_path(HIREDIS_HEADER hiredis)
@@ -46,9 +46,9 @@ target_link_libraries(hello_redis ${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB}   ${catk
 target_link_libraries(hello_cpp
   ${catkin_LIBRARIES}
 )
-target_link_libraries(hello_nodelet
-  ${catkin_LIBRARIES}
-)
+#target_link_libraries(hello_nodelet
+#  ${catkin_LIBRARIES}
+#)
 target_link_libraries(hello_consul
   ${catkin_LIBRARIES}
 )

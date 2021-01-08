@@ -33,7 +33,7 @@ typedef enum {
     eTypeInt64,
 } tPvDatatype;
 
-static char *typeNames[] = {"Unknown", "String", "Float32", "Uint32", "Int64"};
+static const char *typeNames[] = {"Unknown", "String", "Float32", "Uint32", "Int64"};
 
 class ImageHandler {
 public:
@@ -362,9 +362,6 @@ int main(int argc, char **argv) {
             cout << time_s << std::endl;
             cout << it->stamp;
 //        tmp_tm = std::gmtime()
-            int fooi, fooj;
-            fooi = 1337;
-            fooj = 13337;
             int *p = new int;
             *p = 456;
             sbuf << it->stamp;
