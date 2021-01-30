@@ -1,15 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(hello_cpp)
-set(CMAKE_CXX_STANDARD 14)
 add_compile_options(-std=c++11 -Werror=return-type -Wall)
 find_package(catkin REQUIRED COMPONENTS
         roscpp
         nodelet
         )
 find_package(nlohmann_json REQUIRED)
-
-find_package(Boost REQUIRED COMPONENTS filesystem date_time)
-
 
 catkin_package(
 #  INCLUDE_DIRS include
@@ -30,7 +26,6 @@ add_executable(hello_cpp src/hello_cpp.cpp)
 add_executable(hello_consul src/hello_consul.cpp)
 add_executable(hello_json src/hello_json.cpp)
 add_executable(hello_redis src/hello_redis.cpp)
-add_executable(more_ros src/more_ros.cpp src/globals.h src/globals.cpp)
 #add_library(hello_nodelet src/hello_nodelet.cpp src/MyNodeletClass.cpp)
 
 # <------------ add hiredis dependency --------------->
@@ -46,7 +41,6 @@ target_include_directories(hello_redis PUBLIC ${REDIS_PLUS_PLUS_HEADER})
 
 find_library(REDIS_PLUS_PLUS_LIB redis++)
 target_link_libraries(hello_redis ${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB}   ${catkin_LIBRARIES} )
-target_link_libraries(more_ros  ${catkin_LIBRARIES} )
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(hello_cpp
@@ -59,11 +53,9 @@ target_link_libraries(hello_consul
   ${catkin_LIBRARIES}
 )
 
-target_include_directories(hello_json PUBLIC ${Boost_INCLUDE_DIR})
 target_link_libraries(hello_json
-        ${Boost_LIBRARIES}
-        ${nlohmann_json_LIBRARIES}
-        )
+  ${nlohmann_json_LIBRARIES}
+)
 
 #############
 ## Install ##

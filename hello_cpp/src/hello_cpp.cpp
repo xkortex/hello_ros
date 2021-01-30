@@ -2,10 +2,12 @@
    Hello CPP
  */
 #include <iostream>
+#include <mutex>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 #include<ros/ros.h>
 #include <std_msgs/Header.h>
+#include <std_srvs/Trigger.h>
 #include <sensor_msgs/Image.h>
 
 
@@ -38,8 +40,15 @@ static const char *typeNames[] = {"Unknown", "String", "Float32", "Uint32", "Int
 class ImageHandler {
 public:
     void callback(const sensor_msgs::ImageConstPtr& msg);
+    bool health(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &rsp);
     void tellme(string const &s, const sensor_msgs::ImageConstPtr& msg);
 };
+
+bool ImageHandler::health(std_srvs::TriggerRequest  &req, std_srvs::TriggerResponse  &rsp) {
+    rsp.success = true;
+    return true;
+}
+
 
 void ImageHandler::callback(const sensor_msgs::ImageConstPtr &msg) {
     tellme("callback", msg);
@@ -446,6 +455,8 @@ int main(int argc, char **argv) {
         ROS_INFO("tim0 %s %s", to_string(event.current_expected).c_str(), to_string(event.last_expected).c_str() );
 
     }, true, true);
+    cout << "is tim started: " << tim.hasStarted() << " valid: " << tim.isValid()  << " pending: " << tim.hasPending() << endl;
+
 
     ros::Timer tim1 = nh.createTimer(ros::Duration(0.1), [&](const ros::TimerEvent &event){
 //        cout << "is tim valid1: " << tim.hasStarted() << endl;
@@ -456,18 +467,26 @@ int main(int argc, char **argv) {
     ros::Timer tim2 = nh.createTimer(ros::Duration(0.3), [&](const ros::TimerEvent &event){
 //        cout << "is tim valid2: " << tim.hasStarted() << endl;
         ROS_INFO("tim2 %s %s", to_string(event.current_expected).c_str(), to_string(event.last_expected).c_str() );
+        cout << "is tim started: " << tim.hasStarted() << " valid: " << tim.isValid()  << " pending: " << tim.hasPending() << endl;
 
     }, true, true);
 //    tock.~SteadyTimer();
 //    ros::NodeHandlePtr nhp = ros::this_node::get
     image.data.size();
-    cout << "is tim valid: " << tim.hasStarted() << endl;
+    cout << "is tim started: " << tim.hasStarted() << " valid: " << tim.isValid()  << " pending: " << tim.hasPending() << endl;
     int i = 0;
     auto res = nhp->getParam("/myint", i);
     cout << res << " : " << i << endl;
+    auto wdur = ros::WallDuration(0.5);
+    (uint32_t) i ;
+    ros::Time{0.5};
     ros::spin();
+    std::mutex mutex;
+    std::lock_guard<std::mutex> lock(mutex);
+    ros::MultiThreadedSpinner spinner2;
+    ros::TimerEvent te = ros::TimerEvent();
 
-    ros::spin(spinner);
+    ros::spin(spinner2);
 //    ros::waitForShutdown();
 //    for (int i = 0; i < 999999; i++) {
 //        ros::spinOnce();

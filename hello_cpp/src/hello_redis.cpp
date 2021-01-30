@@ -17,14 +17,14 @@ using OptionalHeader = redis::Optional<std_msgs::Header>;
 
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "hello_redis"); // Registering a node in ros master
     //   what():  Cannot use ros::Time::now() before the first NodeHandle has been created or ros::start() has been called.  If this is a standalone app or test that just uses ros::Time and does not communicate over ROS, you may also call ros::Time::init()
+//    ros::init(argc, argv, "hello_redis"); // Registering a node in ros master
 //  ros::Time::init();
-    ros::NodeHandle nh;
-    ros::NodeHandlePtr nhp = ros::NodeHandlePtr(new ros::NodeHandle);
-    ros::start();
-    cout << ros::this_node::getName() << endl;
-    ROS_INFO("Welcome to ROS!");
+//    ros::NodeHandle nh;
+//    ros::NodeHandlePtr nhp = ros::NodeHandlePtr(new ros::NodeHandle);
+//    ros::start();
+//    cout << ros::this_node::getName() << endl;
+//    ROS_INFO("Welcome to ROS!");
     auto rc = redis::Redis("tcp://127.0.0.1:6379");
     redis::OptionalString val = rc.get("foo2");    // val is of type OptionalString. See 'API Reference' section for details.
     if (bool(val)) {
@@ -45,5 +45,11 @@ int main(int argc, char **argv) {
     cout << j.dump() << endl;
     cout << answer.dump() << endl;
     cout << j.flatten().dump() << endl;
+
+    redis::ReplyUPtr sn_out = rc.command("CLIENT", "SETNAME", "george");
+    redis::ReplyUPtr clients = rc.command("CLIENT", "LIST");
+    std::string msg;
+
+    cout << std::string(sn_out->str) << endl << clients->str  << endl;
     return 0;
 }
