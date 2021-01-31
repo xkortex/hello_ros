@@ -23,7 +23,9 @@ std::string to_string(ros::Time const &t) {
 
 class AltTimer : public ros::Timer {
     AltTimer() {}
-    AltTimer(const AltTimer& rhs);
+
+    AltTimer(const AltTimer &rhs);
+
     ~AltTimer();
 
     AltTimer createTimer();
@@ -38,28 +40,28 @@ class AltTimer : public ros::Timer {
 };
 
 
-
 std::string to_string(ros::Timer &t) {
     std::stringstream ss;
 
-    ss << "Timer@" << &t << "(s=" << t.hasStarted() << ", p="  << t.hasPending() << ")";
+    ss << "Timer@" << &t << "(s=" << t.hasStarted() << ", p=" << t.hasPending() << ")";
     return ss.str();
 }
 
 std::string to_string(ros::SteadyTimer &t) {
     std::stringstream ss;
-    ss << "SteadyTimer@" << &t << "(s=" << "X" << ", p="  << t.hasPending() << ")";
+    ss << "SteadyTimer@" << &t << "(s=" << "X" << ", p=" << t.hasPending() << ")";
     return ss.str();
 }
+
 std::string to_string(ros::WallTimer &t) {
     std::stringstream ss;
-    ss << "WallTimer@" << &t << "(s=" << "X" << ", p="  << t.hasPending() << ")";
+    ss << "WallTimer@" << &t << "(s=" << "X" << ", p=" << t.hasPending() << ")";
     return ss.str();
 }
 
 std::string to_string(AltTimer &t) {
     std::stringstream ss;
-    ss << "WallTimer@" << &t << "(s=" << "X" << ", p="  << t.hasPending() << ")";
+    ss << "WallTimer@" << &t << "(s=" << "X" << ", p=" << t.hasPending() << ")";
     return ss.str();
 }
 
@@ -133,16 +135,88 @@ void chatterCallback(const std_msgs::Header::ConstPtr &msg) {
     ROS_INFO("I heard: [%s]", msg->frame_id.c_str());
 }
 
+void betterCallback(const ros::TimerEvent &event, std::shared_ptr<ros::Timer> const timer) {
+    ROS_ERROR("bC inside %s", to_string(*timer).c_str());
+
+}
+
 void make_yolo(ros::NodeHandlePtr const &nhp, double dur) {
     auto yolo2 = std::make_shared<ros::Timer>();
     ROS_INFO("y3 prior  %s", to_string(*yolo2).c_str());
-    *yolo2 = nhp->createTimer(ros::Duration(dur), [&, yolo2](const ros::TimerEvent &event) {
-        ROS_ERROR("y3 inside %s", to_string(*yolo2).c_str());
+    auto func = boost::bind(betterCallback, _1, yolo2);
+    *yolo2 = nhp->createTimer(ros::Duration(dur), func, true, true);
 
-    }, true, true);
+//                              *yolo2 = nhp->createTimer(ros::Duration(dur),
+//                              [yolo2](const ros::TimerEvent &event) {
+//                                  ROS_ERROR("y3 inside %s", to_string(*yolo2).c_str());
+//                                  ROS_ERROR("this should trigger");
+//                              },
+//                              true, true);
     ROS_WARN("y3 outside %s", to_string(*yolo2).c_str());
 }
 
+
+/// Create an anonymous timer callback. A reference to ros::Timer must exist in order for the callback
+/// to trip. If the Timer is destructed, the callback is popped from the event queue
+/// NodeHandle is ROS's god class. It handles the event queue, firing callbacks, message bus, etc.
+void anonymous_timer(ros::NodeHandlePtr const &nhp, double duration, long int tail) {
+    if (!ros::ok()) return;
+    auto yolo = std::make_shared<ros::Timer>();
+    auto func = [&, yolo, tail](const ros::TimerEvent &event) {
+        ROS_INFO("inside callback %s %ld", to_string(*yolo).c_str(), tail);
+        string yuge;
+        yuge.resize(10000000);
+        const string yuck = std::string(yuge);
+        if (tail ) {
+            anonymous_timer(nhp, 0.01, tail-1);
+        }
+
+        /// (yolo) falls out of scope here which should fully destruct the shared pointer
+    };
+    *yolo = nhp->createTimer(ros::Duration(duration), func, true, true);
+    /// (*yolo) falls out of scope, but since we retained a shared_ptr (yolo) to it in the lambda, it should survive
+}
+
+void anonymous_timer(ros::NodeHandlePtr const &nhp, double duration) {
+    return anonymous_timer(nhp, duration, 0);
+}
+
+uint64_t COUNT = 0;
+uint64_t *P_COUNT = &COUNT;
+uint64_t COUNTS[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+auto ROS_INSTANT = ros::Duration{0,0};
+void anonymous_infinite(ros::NodeHandlePtr const &nhp, int i) {
+    if (!ros::ok()) return;
+    auto yolo = std::make_shared<ros::Timer>();
+    auto func = [&, yolo, i](const ros::TimerEvent &event) {
+//        ROS_INFO("inside callback %s %ld %p", to_string(*yolo).c_str(), *P_COUNT, P_COUNT);
+        cout << yolo << ", ";
+        if (COUNT % 5 == 0) {
+            cout << endl;
+        }
+        (COUNTS[i])++;
+        (*P_COUNT)++;
+        anonymous_infinite(nhp, i);
+
+
+        /// (yolo) falls out of scope here which should fully destruct the shared pointer
+    };
+    *yolo = nhp->createTimer(ROS_INSTANT, func, true, true);
+    /// (*yolo) falls out of scope, but since we retained a shared_ptr (yolo) to it in the lambda, it should survive
+}
+
+
+/// This is just to contrast the above approach, to show why I can't just capture the timer itself
+void anonymous_timer_done_wrong(ros::NodeHandlePtr const &nhp, double duration) {
+    ros::Timer yolo;
+    ros::Timer *yolo_p;
+    auto func = [&](const ros::TimerEvent &event) {
+        ROS_INFO("inside callback %s", to_string(yolo).c_str());
+    };
+    yolo = nhp->createTimer(ros::Duration(duration), func, true, true);
+    /// (yolo) falls out of scope, ~ros::Timer(), the callback dies before triggering. This fails.
+}
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "hello_cpp"); // Registering a node in ros master
@@ -203,8 +277,8 @@ int main(int argc, char **argv) {
     print(mp);
     cout << "---" << endl;
     std::default_random_engine generator;
-    std::uniform_int_distribution<int> distribution(1,6);
-    std::uniform_int_distribution<uint32_t > random_uint32(0, 0xffffffff);
+    std::uniform_int_distribution<int> distribution(1, 6);
+    std::uniform_int_distribution<uint32_t> random_uint32(0, 0xffffffff);
 
     std::cout << distribution(generator) << distribution(generator) << " " << random_uint32(generator) << std::endl;
 
@@ -261,16 +335,21 @@ int main(int argc, char **argv) {
     }
 
     make_yolo(nhp, 0.6);
-
-
-
-
+    anonymous_timer(nhp, 0.7);
+    for (int i = 0; i < 16; i++) {
+        anonymous_infinite(nhp, i);
+    }
 
     spinner.start();
 
-    ros::Timer shutdown_timer = nh.createTimer(ros::Duration(5), [&](const ros::TimerEvent &event) {
+    ros::Timer shutdown_timer = nh.createTimer(ros::Duration(10), [&](const ros::TimerEvent &event) {
         ROS_INFO("shutting down....");
-            ros::shutdown();
+        ROS_INFO("COUNT %ld %p", *P_COUNT, P_COUNT);
+        for( int j = 0; j < 16; j++) {
+            cout << COUNTS[j] << "," ;
+        }
+        cout << "}" << endl;
+        ros::shutdown();
     }, true, true);
     ros::waitForShutdown();
     ROS_INFO("fin");
