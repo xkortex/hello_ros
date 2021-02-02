@@ -231,7 +231,6 @@ ros::Duration since_edge(ros::Duration const &granularity) {
 
 void now() {
     ROS_INFO("# Now: %s", to_string(ros::Time::now()).c_str());
-
 }
 
 void callback(const ros::SteadyTimerEvent &event) {

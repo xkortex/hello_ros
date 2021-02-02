@@ -5,6 +5,7 @@ add_compile_options(-std=c++11 -Werror=return-type -Wall)
 find_package(catkin REQUIRED COMPONENTS
         roscpp
         nodelet
+        cv_bridge
         )
 find_package(nlohmann_json REQUIRED)
 
@@ -31,6 +32,8 @@ add_executable(hello_consul src/hello_consul.cpp)
 add_executable(hello_json src/hello_json.cpp)
 add_executable(hello_redis src/hello_redis.cpp)
 add_executable(more_ros src/more_ros.cpp src/globals.h src/globals.cpp)
+add_executable(steady src/steady.cpp)
+add_executable(pvframe src/pvframe.cpp)
 #add_library(hello_nodelet src/hello_nodelet.cpp src/MyNodeletClass.cpp)
 
 # <------------ add hiredis dependency --------------->
@@ -47,6 +50,7 @@ target_include_directories(hello_redis PUBLIC ${REDIS_PLUS_PLUS_HEADER})
 find_library(REDIS_PLUS_PLUS_LIB redis++)
 target_link_libraries(hello_redis ${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB}   ${catkin_LIBRARIES} )
 target_link_libraries(more_ros  ${catkin_LIBRARIES} )
+target_link_libraries(steady  ${catkin_LIBRARIES} )
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(hello_cpp
@@ -64,6 +68,17 @@ target_link_libraries(hello_json
         ${Boost_LIBRARIES}
         ${nlohmann_json_LIBRARIES}
         )
+
+find_package(OpenSSL REQUIRED )
+if (OPENSSL_FOUND)
+    # Add the include directories for compiling
+    target_include_directories(pvframe PUBLIC ${OPENSSL_INCLUDE_DIR})
+    # Add the static lib for linking
+    target_link_libraries(pvframe OpenSSL::SSL OpenSSL::Crypto)
+    message(STATUS "Found OpenSSL ${OPENSSL_VERSION}")
+else()
+    message(STATUS "OpenSSL Not Found")
+endif()
 
 #############
 ## Install ##
